@@ -870,6 +870,25 @@ body {
 }
 
 
+
+/* ── Technique reset link ── */
+.technique-reset {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  border: none;
+  background: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.technique-reset:active { color: var(--coral); }
+
 /* ── Speed signal ── */
 .speed-signal {
   font-family: var(--mono);
@@ -1447,6 +1466,7 @@ function renderTechniqueList(ch) {
     const card = document.createElement('div');
     card.className = 'technique-card' + (isRec ? ' is-recommended' : '');
     card.onclick = () => showDrill(tech.id);
+    const showReset = acc !== null || (p && p.attempts > 0);
     card.innerHTML = `
       ${isRec ? '<div class="recommended-badge">Recommended next</div>' : ''}
       <div class="technique-card-top">
@@ -1460,9 +1480,43 @@ function renderTechniqueList(ch) {
         </div>
         <span class="t-progress-label">${progressLabel}</span>
       </div>
+      ${showReset ? `<button class="technique-reset" onclick="resetTechnique(event, '${tech.id}')">Reset progress</button>` : ''}
     `;
     list.appendChild(card);
   });
+}
+
+function resetTechnique(e, techId) {
+  e.stopPropagation();
+  // Show inline confirm buttons on the reset link itself
+  const btn = e.target;
+  if (btn.dataset.confirming === 'true') return;
+  btn.dataset.confirming = 'true';
+  btn.textContent = 'Confirm reset?';
+  btn.style.color = 'var(--coral)';
+
+  // Add a cancel option next to it
+  const cancel = document.createElement('button');
+  cancel.className = 'technique-reset';
+  cancel.textContent = 'Cancel';
+  cancel.style.marginLeft = '10px';
+  cancel.style.color = 'var(--muted)';
+  cancel.style.textDecoration = 'none';
+  cancel.onclick = (ev) => {
+    ev.stopPropagation();
+    const ch = CURRICULUM.find(c => c.techniques.some(t => t.id === techId));
+    renderTechniqueList(ch);
+  };
+  btn.insertAdjacentElement('afterend', cancel);
+
+  // Swap reset button to actual reset on second tap
+  btn.onclick = (ev) => {
+    ev.stopPropagation();
+    progress[techId] = { history: [], attempts: 0, selfComplete: false };
+    saveProgress();
+    const ch = CURRICULUM.find(c => c.techniques.some(t => t.id === techId));
+    renderTechniqueList(ch);
+  };
 }
 
 function toggleSelfReport(techId) {
