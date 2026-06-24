@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mental Math Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow-x: hidden; }
+
+/* ── Tokens ── */
+:root {
+  --bg:       #1A1A2E;
+  --panel:    #16213E;
+  --steel:    #0F3460;
+  --border:   #1E3050;
+  --amber:    #E2B04A;
+  --amber-dim:#8B6B2A;
+  --white:    #F0F4F8;
+  --muted:    #4A6080;
+  --green:    #2ECC87;
+  --coral:    #E84A5F;
+  --yellow:   #F5C842;
+  --serif:    'DM Serif Display', serif;
+  --sans:     'DM Sans', sans-serif;
+  --mono:     'Space Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Views ── */
+.view { display: none; width: 100%; max-width: 520px; padding: 0 16px 40px; }
+.view.active { display: flex; flex-direction: column; }
+
+/* ════════════════════════════════
+   MAP VIEW
+════════════════════════════════ */
+.map-header {
+  padding: 28px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.map-header .eyebrow {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.map-header h1 {
+  font-family: var(--serif);
+  font-size: 1.7rem;
+  color: var(--white);
+  line-height: 1.1;
+}
+.map-header .subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Overall progress bar */
+.overall-progress {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.overall-progress .label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--steel);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--green));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.overall-progress .pct {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--amber);
+  font-weight: 700;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Chapter cards */
+.chapter-list { display: flex; flex-direction: column; gap: 10px; }
+
+.chapter-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  position: relative;
+  overflow: hidden;
+}
+.chapter-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--border);
+  border-radius: 3px 0 0 3px;
+  transition: background 0.2s;
+}
+.chapter-card.mastered::before { background: var(--green); }
+.chapter-card.in-progress::before { background: var(--amber); }
+.chapter-card.recommended { border-color: var(--amber-dim); }
+.chapter-card:active { border-color: var(--amber); }
+
+.chapter-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.chapter-num {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.chapter-status {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.chapter-status.done { border-color: var(--green); color: var(--green); }
+.chapter-status.active { border-color: var(--amber); color: var(--amber); }
+.chapter-status.next { border-color: var(--amber-dim); color: var(--amber); }
+
+.chapter-title {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  color: var(--white);
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+
+/* Technique dots */
+.technique-dots {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.t-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--steel);
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.t-dot.mastered { background: var(--green); border-color: var(--green); }
+.t-dot.partial  { background: var(--yellow); border-color: var(--yellow); }
+.t-dot.active   { background: var(--amber); border-color: var(--amber); }
+
+.chapter-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.chapter-mastery-pct {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.chapter-mastery-pct span { color: var(--white); font-weight: 700; }
+.chapter-arrow {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* Recommended badge */
+.recommended-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+.recommended-badge::before {
+  content: '→';
+  font-size: 0.7rem;
+}
+
+/* ════════════════════════════════
+   CHAPTER VIEW
+════════════════════════════════ */
+.chapter-header {
+  padding: 24px 0 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.back-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.back-btn:active { color: var(--white); border-color: var(--muted); }
+
+.chapter-header-text .ch-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 3px;
+}
+.chapter-header-text h2 {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  line-height: 1.15;
+}
+
+/* Technique list */
+.technique-list { display: flex; flex-direction: column; gap: 8px; }
+
+.technique-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color 0.15s;
+}
+.technique-card:active { border-color: var(--amber); }
+.technique-card.is-recommended { border-color: var(--amber-dim); }
+.technique-card.is-self-report { cursor: default; }
+
+.technique-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.technique-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--white);
+}
+.technique-badge {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.technique-badge.mastered { border-color: var(--green); color: var(--green); background: rgba(46,204,135,0.08); }
+.technique-badge.fluent   { border-color: var(--yellow); color: var(--yellow); background: rgba(245,200,66,0.08); }
+.technique-badge.partial  { border-color: var(--amber); color: var(--amber); background: rgba(226,176,74,0.08); }
+
+.technique-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.technique-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.t-progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--steel);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.t-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--muted);
+  transition: width 0.4s ease, background 0.3s;
+}
+.t-progress-fill.good   { background: var(--amber); }
+.t-progress-fill.great  { background: var(--green); }
+.t-progress-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  min-width: 50px;
+  text-align: right;
+}
+
+/* Self-report card */
+.self-report-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.self-report-card h3 {
+  font-family: var(--serif);
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+.self-report-card p {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+.self-report-card a {
+  color: var(--amber);
+  text-decoration: none;
+}
+.self-report-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.check-box {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--green);
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.check-box.checked { border-color: var(--green); background: rgba(46,204,135,0.1); }
+.check-label { font-size: 0.8rem; color: var(--white); }
+
+/* ════════════════════════════════
+   DRILL VIEW
+════════════════════════════════ */
+.drill-header {
+  padding: 20px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.drill-header-text {
+  flex: 1;
+}
+.drill-header-text .d-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 2px;
+}
+.drill-header-text h3 {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+/* Mastery progress strip */
+.mastery-strip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mastery-strip .ms-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.mastery-strip .ms-track {
+  flex: 1;
+  height: 5px;
+  background: var(--steel);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.mastery-strip .ms-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--amber);
+  transition: width 0.3s ease, background 0.3s;
+}
+.mastery-strip .ms-fill.great { background: var(--green); }
+.mastery-strip .ms-pct {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--amber);
+  min-width: 34px;
+  text-align: right;
+}
+.mastery-strip .ms-pct.great { color: var(--green); }
+
+/* Concept card */
+.concept-card {
+  background: var(--steel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.concept-card .cc-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.concept-card .cc-title {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.concept-card .cc-chevron {
+  font-size: 0.6rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.concept-card.expanded .cc-chevron { transform: rotate(180deg); }
+.concept-card .cc-body {
+  display: none;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--white);
+  line-height: 1.55;
+}
+.concept-card.expanded .cc-body { display: block; }
+.concept-card .cc-example {
+  margin-top: 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--amber);
+  line-height: 1.6;
+}
+
+/* Technique cue (Chapter 7) */
+.technique-cue {
+  background: rgba(226,176,74,0.1);
+  border: 1px solid var(--amber-dim);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--amber);
+  letter-spacing: 0.03em;
+  line-height: 1.7;
+  display: none;
+}
+.technique-cue.visible { display: block; }
+.technique-cue strong { color: var(--white); font-weight: 700; }
+
+/* Problem card */
+.problem-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.problem-display {
+  font-family: var(--mono);
+  font-size: clamp(2.4rem, 11vw, 4.2rem);
+  font-weight: 700;
+  color: var(--white);
+  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.problem-display .op { color: var(--muted); }
+.problem-context {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 18px;
+  font-style: italic;
+  line-height: 1.4;
+  min-height: 1.2em;
+}
+.answer-display {
+  width: 100%;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  text-align: center;
+  color: var(--white);
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 8px;
+}
+.answer-display.empty { color: var(--muted); font-size: 1rem; letter-spacing: 0.05em; }
+.answer-display.active { border-color: var(--amber); }
+.answer-display.correct { border-color: var(--green); background: rgba(46,204,135,0.08); color: var(--green); }
+.answer-display.wrong   { border-color: var(--coral); background: rgba(232,74,95,0.08); color: var(--coral); }
+.answer-display.close   { border-color: var(--yellow); background: rgba(245,200,66,0.08); color: var(--yellow); }
+
+.feedback-row {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  min-height: 1.2em;
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+.feedback-row.correct { color: var(--green); }
+.feedback-row.wrong   { color: var(--coral); }
+.feedback-row.close   { color: var(--yellow); }
+.feedback-row.hidden  { opacity: 0; }
+
+/* Numpad */
+.numpad {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.np-btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  height: 58px;
+  font-family: var(--mono);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  transition: background 0.08s, transform 0.07s;
+}
+.np-btn:active { background: var(--border); transform: scale(0.94); }
+.np-btn.del {
+  font-size: 0.85rem;
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  letter-spacing: 0.04em;
+}
+.np-btn.submit {
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+  font-size: 1.1rem;
+}
+.np-btn.submit:active { background: #c49a3a; }
+.np-btn.neg {
+  font-size: 1rem;
+  color: var(--muted);
+  background: var(--bg);
+}
+
+/* Skip / hint row */
+.drill-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ghost-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ghost-btn:active { color: var(--white); border-color: var(--muted); }
+
+/* Session stats */
+.session-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.s-stat {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+}
+.s-stat-val {
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.s-stat-val.amber { color: var(--amber); }
+.s-stat-val.green { color: var(--green); }
+.s-stat-label {
+  font-size: 0.58rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+/* ── Mastery toast ── */
+.mastery-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--green);
+  color: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 12px 24px;
+  border-radius: 100px;
+  white-space: nowrap;
+  z-index: 300;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+.mastery-toast.show { transform: translateX(-50%) translateY(0); }
+
+
+/* ── Scenario layout (Ch6 estimation) ── */
+.problem-card.scenario {
+  padding: 20px 18px 18px;
+  align-items: stretch;
+}
+.scenario-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.scenario-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  width: 100%;
+}
+.scenario-num-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 9px 14px;
+}
+.scenario-num-row .sn-label {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.scenario-num-row .sn-value {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.01em;
+}
+.scenario-num-row .sn-op {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--muted);
+  min-width: 20px;
+  text-align: center;
+}
+.scenario-prompt {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--white);
+  text-align: center;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.scenario-tolerance {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 14px;
+  font-style: italic;
+}
+
+/* ── Chain layout (Ch7 multi-step) ── */
+.problem-card.chain {
+  padding: 18px 18px 18px;
+  align-items: stretch;
+  gap: 0;
+}
+.chain-scenario {
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--white);
+  line-height: 1.5;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 10px;
+}
+.chain-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.chain-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.chain-step .cs-num {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--amber);
+  background: rgba(226,176,74,0.12);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chain-step .cs-text {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.chain-step.active-step { border-color: var(--amber-dim); }
+.chain-step.active-step .cs-text { color: var(--white); }
+.chain-question {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--amber);
+  text-align: center;
+  margin-bottom: 14px;
+  line-height: 1.3;
+}
+
+
+/* ── Chain anchor connector ── */
+.chain-anchor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  margin: -2px 0;
+}
+.chain-anchor .ca-arrow {
+  font-size: 0.9rem;
+  color: var(--amber-dim);
+  line-height: 1;
+}
+.chain-anchor .ca-value {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--amber);
+  background: rgba(226,176,74,0.1);
+  border: 1px solid var(--amber-dim);
+  border-radius: 20px;
+  padding: 4px 14px;
+  letter-spacing: 0.04em;
+}
+.chain-anchor .ca-label {
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+
+/* ── Speed signal ── */
+.speed-signal {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--amber);
+  text-align: center;
+  letter-spacing: 0.04em;
+  min-height: 1em;
+  margin-top: 3px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.speed-signal.visible { opacity: 1; }
+
+/* ── Responsive ── */
+@media (prefers-reduced-motion: reduce) {
+  *, .mastery-toast { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════ MAP VIEW ════════════ -->
+<div class="view active" id="view-map">
+  <div class="map-header">
+    <div class="eyebrow">Mental Math Companion</div>
+    <h1>Your Training Map</h1>
+    <div class="subtitle">Practice mastery · Side-by-side with your guide</div>
+  </div>
+
+  <div class="overall-progress">
+    <div class="label">Overall</div>
+    <div class="progress-track"><div class="progress-fill" id="overall-fill" style="width:0%"></div></div>
+    <div class="pct" id="overall-pct">0%</div>
+  </div>
+
+  <div class="chapter-list" id="chapter-list"></div>
+</div>
+
+<!-- ════════════ CHAPTER VIEW ════════════ -->
+<div class="view" id="view-chapter">
+  <div class="chapter-header">
+    <button class="back-btn" onclick="showMap()">← Map</button>
+    <div class="chapter-header-text">
+      <div class="ch-eyebrow" id="ch-eyebrow"></div>
+      <h2 id="ch-title"></h2>
+    </div>
+  </div>
+  <div class="technique-list" id="technique-list"></div>
+</div>
+
+<!-- ════════════ DRILL VIEW ════════════ -->
+<div class="view" id="view-drill">
+  <div class="drill-header">
+    <button class="back-btn" onclick="showChapter(currentChapterId)">← Back</button>
+    <div class="drill-header-text">
+      <div class="d-eyebrow" id="d-eyebrow"></div>
+      <h3 id="d-title"></h3>
+    </div>
+  </div>
+
+  <div class="mastery-strip">
+    <div class="ms-label">Mastery</div>
+    <div class="ms-track"><div class="ms-fill" id="ms-fill" style="width:0%"></div></div>
+    <div class="ms-pct" id="ms-pct">—</div>
+  </div>
+
+  <div class="concept-card" id="concept-card">
+    <div class="cc-toggle" onclick="toggleConcept()">
+      <span class="cc-title">Quick Reference</span>
+      <span class="cc-chevron">▼</span>
+    </div>
+    <div class="cc-body" id="cc-body"></div>
+  </div>
+
+  <div class="technique-cue" id="technique-cue"></div>
+
+  <div class="problem-card">
+    <div class="problem-display" id="problem-display"></div>
+    <div class="problem-context" id="problem-context"></div>
+    <div class="answer-display empty active" id="answer-display">enter answer</div>
+    <div class="feedback-row hidden" id="feedback-row"></div>
+    <div class="speed-signal" id="speed-signal"></div>
+  </div>
+
+  <div class="numpad" id="numpad">
+    <button class="np-btn" onclick="np('7')">7</button>
+    <button class="np-btn" onclick="np('8')">8</button>
+    <button class="np-btn" onclick="np('9')">9</button>
+    <button class="np-btn" onclick="np('4')">4</button>
+    <button class="np-btn" onclick="np('5')">5</button>
+    <button class="np-btn" onclick="np('6')">6</button>
+    <button class="np-btn" onclick="np('1')">1</button>
+    <button class="np-btn" onclick="np('2')">2</button>
+    <button class="np-btn" onclick="np('3')">3</button>
+    <button class="np-btn del" onclick="npDel()">DEL</button>
+    <button class="np-btn" onclick="np('0')">0</button>
+    <button class="np-btn submit" onclick="submitAnswer()">→</button>
+  </div>
+
+  <div class="drill-actions">
+    <button class="ghost-btn" onclick="skipProblem()">Skip</button>
+    <button class="ghost-btn" onclick="toggleDecimal()">. decimal</button>
+  </div>
+
+  <div class="session-stats">
+    <div class="s-stat"><div class="s-stat-val" id="ss-answered">0</div><div class="s-stat-label">Answered</div></div>
+    <div class="s-stat"><div class="s-stat-val green" id="ss-correct">0</div><div class="s-stat-label">Correct</div></div>
+    <div class="s-stat"><div class="s-stat-val amber" id="ss-acc">—</div><div class="s-stat-label">Accuracy</div></div>
+  </div>
+</div>
+
+<!-- Mastery toast -->
+<div class="mastery-toast" id="mastery-toast">Technique Mastered ✓</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CURRICULUM DATA
+// ══════════════════════════════════════════════
+const CURRICULUM = [
+  {
+    id: 'ch1',
+    title: 'Number Bonds & Base-10',
+    techniques: [
+      {
+        id: 'ch1-t1',
+        name: 'Bonds to 10',
+        desc: 'Automatic recognition of pairs that sum to 10.',
+        concept: 'When you see 7, you instantly register 3. When you see 4, you register 6. These are not calculations — they are perceived relationships. Bonds to 10 underlie every fast addition and subtraction you will ever do.',
+        example: '3 + ? = 10 → 7\n8 + ? = 10 → 2\n6 + ? = 10 → 4',
+        type: 'bonds10',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch1-t2',
+        name: 'Bonds to 100',
+        desc: 'Find the complement of any two-digit number to reach 100.',
+        concept: 'Tens digit: find what makes 9. Units digit: find what makes 10. Exception: if units digit is 0, tens digit finds what makes 10 directly.',
+        example: '67 + ? = 100\nTens: 6 needs 3 → 3_\nUnits: 7 needs 3 → _3\nAnswer: 33',
+        type: 'bonds100',
+        estimationTolerance: null,
+        cue: null,
+      },
+    ]
+  },
+  {
+    id: 'ch2',
+    title: 'Addition & Subtraction at Speed',
+    techniques: [
+      {
+        id: 'ch2-t1',
+        name: 'Left-to-Right Addition',
+        desc: 'Add largest components first. Always have a usable running total.',
+        concept: 'Work hundreds → tens → ones. You always have an approximate answer available. 347 + 285: start with 500, then 620, then 632. Never start from the right.',
+        example: '347 + 285\n300+200 = 500\n500+40+80 = 620\n620+7+5 = 632',
+        type: 'ltr-add',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch2-t2',
+        name: 'Compensation',
+        desc: 'Round to a friendly number, calculate, then adjust.',
+        concept: 'Find a number close to a round figure. Round it. Calculate. Adjust back by exactly what you added or removed. 847 + 199: treat as 847 + 200 = 1047, then subtract 1.',
+        example: '67 + 38\n→ 67 + 40 = 107\n→ 107 − 2 = 105',
+        type: 'compensation-add',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch2-t3',
+        name: 'Bridging Through Tens',
+        desc: 'Use the nearest round number as a stepping stone.',
+        concept: 'Find how much the first number needs to reach the next ten. Take that from the second number. Add the remainder. 76 + 47: 76 needs 4 to reach 80, leaving 43. 80 + 43 = 123.',
+        example: '76 + 47\n76 needs 4 → reach 80\n47 − 4 = 43\n80 + 43 = 123',
+        type: 'bridging',
+        estimationTolerance: null,
+        cue: null,
+      },
+    ]
+  },
+  {
+    id: 'ch3',
+    title: 'Percentages',
+    techniques: [
+      {
+        id: 'ch3-t1',
+        name: 'Building from 10%',
+        desc: 'Find 10% first. Build any percentage from it.',
+        concept: '10% = decimal shift left. Everything else builds from there. 15% = 10% + 5% (half of 10%). 25% = divide by 4. 1% = 10% ÷ 10. Never calculate a percentage from scratch.',
+        example: '15% of $240,000\n10% = $24,000\n5% = $12,000\n15% = $36,000',
+        type: 'pct-build',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch3-t2',
+        name: 'Complement Method',
+        desc: 'For percentages above 70%, calculate the small piece and subtract.',
+        concept: 'When a percentage is above 70%, finding what is NOT included is faster. Calculate the small complement percentage, then subtract from the total.',
+        example: '85% of $320,000\n→ find 15% instead\n10%+5% = $32k+$16k = $48k\n$320k − $48k = $272,000',
+        type: 'pct-complement',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch3-t3',
+        name: 'Reverse Percentage',
+        desc: 'Given a dollar amount, find what percentage it represents.',
+        concept: 'Set up the fraction. Simplify using base-10. Read as a percentage. $42k gain on $420k: 42/420 = 1/10 = 10%. Always simplify before calculating.',
+        example: '$42,000 gain on $420,000\n42/420 = 1/10 = 10%\n\n$15k of $250k income\n15/250 = 6/100 = 6%',
+        type: 'pct-reverse',
+        estimationTolerance: null,
+        cue: null,
+      },
+    ]
+  },
+  {
+    id: 'ch4',
+    title: 'Multiplication Fluency',
+    techniques: [
+      {
+        id: 'ch4-t1',
+        name: 'Times Table Mastery',
+        desc: 'Drill all multiplication facts 1–12 to automatic recall.',
+        concept: 'The times table is not memorized all at once — it is built in order. ×2 (doubling), ×10, ×5 (half of ×10), ×4 (double ×2), ×9 (×10 minus one group), then the hard core: 6×7, 6×8, 7×8, 7×9, 8×9. Drill until every fact responds in under 2 seconds.',
+        example: 'Hard-core facts — drill these most:\n6×7=42  6×8=48  7×8=56\n7×9=63  8×9=72  6×12=72\n7×12=84  8×12=96',
+        type: 'times-table',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch4-t2',
+        name: 'Distributive Method',
+        desc: 'Break one number into components. Multiply each. Combine.',
+        concept: 'A × B = (A₁ + A₂) × B. Split the larger number at its tens boundary. Multiply each part. Add. Works on any numbers — the reliable fallback when other strategies do not apply.',
+        example: '34 × 7\n= (30 + 4) × 7\n= 210 + 28 = 238\n\n$1,250 × 12\n= 12,000 + 3,000 = $15,000',
+        type: 'distributive',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch4-t3',
+        name: 'Doubling & Halving',
+        desc: 'Halve one number, double the other. Repeat until trivial.',
+        concept: 'If one number is even, this strategy converts complex multiplication into simple multiplication. Keep halving and doubling until one number is single-digit or a round figure.',
+        example: '35 × 16\n→ 70 × 8\n→ 140 × 4\n→ 280 × 2 = 560\n\n25 × 48 → 50×24 → 100×12 = 1,200',
+        type: 'doubling-halving',
+        estimationTolerance: null,
+        cue: null,
+      },
+    ]
+  },
+  {
+    id: 'ch5',
+    title: 'Division, Ratios & Rule of 72',
+    techniques: [
+      {
+        id: 'ch5-t1',
+        name: 'Division as Reverse Multiplication',
+        desc: 'Reframe every division as a missing multiplication factor.',
+        concept: '84 ÷ 7 = ? is the same as 7 × ? = 84. Always reframe this way. Your times table handles most division automatically — no new learning required beyond Chapter 4.',
+        example: '56 ÷ 8 → 8 × ? = 56 → 7\n72 ÷ 9 → 9 × ? = 72 → 8\n63 ÷ 7 → 7 × ? = 63 → 9',
+        type: 'div-reverse',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch5-t2',
+        name: 'Division by Decomposition',
+        desc: 'Split the dividend into parts that divide cleanly.',
+        concept: 'Find the largest multiple of the divisor that fits inside the dividend. That is your first component. The remainder is your second. Divide each. Add results.',
+        example: '336 ÷ 8\n= (320 + 16) ÷ 8\n= 40 + 2 = 42\n\n$1,560 ÷ 12\n= (1200+360)÷12 = 100+30 = $130',
+        type: 'div-decomp',
+        estimationTolerance: null,
+        cue: null,
+      },
+      {
+        id: 'ch5-t3',
+        name: 'Rule of 72',
+        desc: '72 ÷ rate = years to double. Memorize the key benchmarks.',
+        concept: 'Divide 72 by the annual rate to find doubling time. Runs in reverse: 72 ÷ years = required rate. Key benchmarks: 6%→12yr, 7%→~10yr, 8%→9yr, 9%→8yr, 10%→7.2yr.',
+        example: 'Portfolio at 7% return:\n72 ÷ 7 ≈ 10.3 years to double\n\nDouble in 9 years?\n72 ÷ 9 = 8% required',
+        type: 'rule72',
+        estimationTolerance: null,
+        cue: null,
+      },
+    ]
+  },
+  {
+    id: 'ch6',
+    title: 'Estimation & Magnitude',
+    techniques: [
+      {
+        id: 'ch6-t1',
+        name: 'Leading Digit Estimation',
+        desc: 'Round to leading digits. Combine. Verify order of magnitude.',
+        concept: 'Keep the first digit accurate. Round the second. Drop the rest. Combine the rounded figures. The result should match the order of magnitude of the exact answer. Use this as a sanity check before any precise calculation.',
+        example: '$412k + $287k + $631k\n→ $410k + $290k + $630k\n→ $700k + $630k ≈ $1,330,000\nExact: $1,330,700 ✓',
+        type: 'estimation-leading',
+        estimationTolerance: 0.10,
+        cue: null,
+      },
+      {
+        id: 'ch6-t2',
+        name: 'Anchor & Adjust',
+        desc: 'Calculate with a nearby round number. Adjust for the difference.',
+        concept: 'Find a number you can calculate exactly — the anchor. Calculate from the anchor. Scale the result proportionally to the actual figure. Used for growth projections and multi-year estimates.',
+        example: '$85k growing at 7% for 10 years:\nAnchor: $100k → doubles → $200k\n$85k is 85% of $100k\n85% of $200k ≈ $170,000\n(Exact: $167,158)',
+        type: 'estimation-anchor',
+        estimationTolerance: 0.15,
+        cue: null,
+      },
+    ]
+  },
+  {
+    id: 'ch7',
+    title: 'Performing Under Pressure',
+    techniques: [
+      {
+        id: 'ch7-t1',
+        name: 'Multi-Step: % then Multiply',
+        desc: 'Find a percentage, then multiply the result. Chain two operations.',
+        concept: 'Two-step problems appear constantly in client conversations. Step 1: find the percentage. Anchor on that result and state it. Step 2: multiply or project from that result. Never lose the interim anchor.',
+        example: 'Move 20% of $640k to bonds.\nBonds earn 4.5% annually.\nWhat is the annual income?\n\nStep 1: 20% of $640k = $128,000\nStep 2: 4.5% of $128k\n  1% = $1,280 → 4% = $5,120\n  0.5% = $640\n  Total = $5,760',
+        type: 'chain-pct-mul',
+        estimationTolerance: null,
+        cue: '<strong>①</strong> Find the percentage first<br><strong>②</strong> Multiply the result',
+      },
+      {
+        id: 'ch7-t2',
+        name: 'Multi-Step: Divide then %',
+        desc: 'Divide a total, then apply a percentage to the result.',
+        concept: 'Split a figure first, then apply a rate to one of the pieces. Decompose in order. State the interim figure clearly — it is your anchor for the second operation.',
+        example: 'Split $840k equally 3 ways.\nEach share earns 0.75% fee.\nWhat is the fee per account?\n\nStep 1: $840k ÷ 3 = $280,000\nStep 2: 0.75% of $280k\n  1% = $2,800 → 0.75% = $2,100\n  Fee per account = $2,100',
+        type: 'chain-div-pct',
+        estimationTolerance: null,
+        cue: '<strong>①</strong> Divide the total first<br><strong>②</strong> Apply the percentage to the result',
+      },
+    ]
+  },
+];
+
+// ══════════════════════════════════════════════
+// LOCALSTORAGE
+// ══════════════════════════════════════════════
+const STORAGE_KEY = 'mmcompanion_v1';
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {};
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch(e) {}
+}
+
+// progress[techniqueId] = { history: [1,0,1,...], attempts: N, selfComplete: bool }
+let progress = loadProgress();
+
+function getTechniqueProgress(id) {
+  if (!progress[id]) progress[id] = { history: [], attempts: 0, selfComplete: false };
+  return progress[id];
+}
+
+function recordAttempt(id, correct) {
+  const p = getTechniqueProgress(id);
+  p.history.push(correct ? 1 : 0);
+  if (p.history.length > 20) p.history.shift();
+  p.attempts++;
+  saveProgress();
+}
+
+function getAccuracy(id) {
+  const p = getTechniqueProgress(id);
+  if (!p.history || p.history.length === 0) return null;
+  return p.history.reduce((s,v) => s+v, 0) / p.history.length;
+}
+
+function isMastered(id) {
+  const t = getTechById(id);
+  // times-table uses standard accuracy mastery
+  const acc = getAccuracy(id);
+  const p = getTechniqueProgress(id);
+  return acc !== null && acc >= 0.85 && p.history.length >= 10;
+}
+
+function masteryLevel(id) {
+  // returns: 'none' | 'partial' | 'fluent' | 'mastered'
+  const t = getTechById(id);
+  // times-table uses standard mastery levels
+  const acc = getAccuracy(id);
+  const p = getTechniqueProgress(id);
+  if (acc === null || p.history.length < 5) return p.attempts > 0 ? 'partial' : 'none';
+  if (acc >= 0.85 && p.history.length >= 10) return 'mastered';
+  if (acc >= 0.70) return 'fluent';
+  return 'partial';
+}
+
+function getTechById(id) {
+  for (const ch of CURRICULUM) {
+    for (const t of ch.techniques) {
+      if (t.id === id) return t;
+    }
+  }
+  return null;
+}
+
+function getChapterProgress(ch) {
+  const total = ch.techniques.length;
+  const mastered = ch.techniques.filter(t => isMastered(t.id)).length;
+  return { total, mastered, pct: total > 0 ? mastered/total : 0 };
+}
+
+function getOverallProgress() {
+  let total = 0, mastered = 0;
+  for (const ch of CURRICULUM) {
+    total += ch.techniques.length;
+    mastered += ch.techniques.filter(t => isMastered(t.id)).length;
+  }
+  return total > 0 ? mastered/total : 0;
+}
+
+function getRecommendedTechniqueId() {
+  for (const ch of CURRICULUM) {
+    for (const t of ch.techniques) {
+      if (!isMastered(t.id)) return t.id;
+    }
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+let currentChapterId = null;
+let currentTechniqueId = null;
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showMap() {
+  renderMap();
+  showView('view-map');
+}
+
+function showChapter(chId) {
+  currentChapterId = chId;
+  const ch = CURRICULUM.find(c => c.id === chId);
+  document.getElementById('ch-eyebrow').textContent = 'Chapter ' + (CURRICULUM.indexOf(ch)+1);
+  document.getElementById('ch-title').textContent = ch.title;
+  renderTechniqueList(ch);
+  showView('view-chapter');
+}
+
+function showDrill(techId) {
+  currentTechniqueId = techId;
+  const tech = getTechById(techId);
+  const ch = CURRICULUM.find(c => c.techniques.some(t => t.id === techId));
+
+  document.getElementById('d-eyebrow').textContent = ch.title;
+  document.getElementById('d-title').textContent = tech.name;
+
+  // Concept card
+  const ccBody = document.getElementById('cc-body');
+  ccBody.innerHTML = `<p>${tech.concept}</p><div class="cc-example">${tech.example.replace(/\n/g,'<br>')}</div>`;
+  document.getElementById('concept-card').classList.remove('expanded');
+
+  // Technique cue
+  const cueEl = document.getElementById('technique-cue');
+  if (tech.cue) {
+    cueEl.innerHTML = tech.cue;
+    cueEl.classList.add('visible');
+  } else {
+    cueEl.classList.remove('visible');
+  }
+
+  // all technique types proceed to drill view
+
+  // Reset session
+  sessionAnswered = 0;
+  sessionCorrect = 0;
+  currentEntry = '';
+  answered = false;
+  updateSessionStats();
+  updateMasteryStrip(techId);
+  nextProblem();
+  showView('view-drill');
+}
+
+// ══════════════════════════════════════════════
+// MAP RENDER
+// ══════════════════════════════════════════════
+function renderMap() {
+  const recId = getRecommendedTechniqueId();
+  const overall = getOverallProgress();
+
+  document.getElementById('overall-fill').style.width = (overall*100) + '%';
+  document.getElementById('overall-pct').textContent = Math.round(overall*100) + '%';
+
+  const list = document.getElementById('chapter-list');
+  list.innerHTML = '';
+
+  CURRICULUM.forEach((ch, idx) => {
+    const cp = getChapterProgress(ch);
+    const isRec = ch.techniques.some(t => t.id === recId);
+    const allMastered = cp.mastered === cp.total;
+    const hasProgress = cp.mastered > 0;
+
+    const card = document.createElement('div');
+    card.className = 'chapter-card' +
+      (allMastered ? ' mastered' : hasProgress ? ' in-progress' : '') +
+      (isRec ? ' recommended' : '');
+    card.onclick = () => showChapter(ch.id);
+
+    const statusLabel = allMastered ? 'Complete' : hasProgress ? 'In Progress' : isRec ? 'Start Here' : 'Upcoming';
+    const statusClass = allMastered ? 'done' : hasProgress ? 'active' : isRec ? 'next' : '';
+
+    let dotsHTML = ch.techniques.map(t => {
+      const lv = masteryLevel(t.id);
+      const cls = lv === 'mastered' ? 'mastered' : lv === 'fluent' ? 'partial' : lv === 'partial' ? 'active' : '';
+      return `<div class="t-dot ${cls}" title="${t.name}"></div>`;
+    }).join('');
+
+    card.innerHTML = `
+      ${isRec ? '<div class="recommended-badge">Recommended next</div>' : ''}
+      <div class="chapter-card-top">
+        <span class="chapter-num">Chapter ${idx+1}</span>
+        <span class="chapter-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="chapter-title">${ch.title}</div>
+      <div class="technique-dots">${dotsHTML}</div>
+      <div class="chapter-card-footer">
+        <span class="chapter-mastery-pct"><span>${cp.mastered}</span> / ${cp.total} mastered</span>
+        <span class="chapter-arrow">›</span>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════
+// CHAPTER VIEW RENDER
+// ══════════════════════════════════════════════
+function renderTechniqueList(ch) {
+  const recId = getRecommendedTechniqueId();
+  const list = document.getElementById('technique-list');
+  list.innerHTML = '';
+
+  ch.techniques.forEach(tech => {
+    const lv = masteryLevel(tech.id);
+    const isRec = tech.id === recId;
+
+    // all techniques rendered as standard technique cards below
+
+    const badgeLabel = lv === 'mastered' ? 'Mastered' : lv === 'fluent' ? 'Fluent' : lv === 'partial' ? 'Practicing' : '';
+    const badgeClass = lv === 'mastered' ? 'mastered' : lv === 'fluent' ? 'fluent' : lv === 'partial' ? 'partial' : '';
+    const acc = getAccuracy(tech.id);
+    const p = getTechniqueProgress(tech.id);
+    const fillPct = acc !== null ? Math.round(acc * 100) : 0;
+    const fillClass = fillPct >= 85 ? 'great' : fillPct >= 70 ? 'good' : '';
+    const progressLabel = acc !== null
+      ? `${fillPct}% accuracy · ${p.history.length}/20 window`
+      : 'Not yet started';
+
+    const card = document.createElement('div');
+    card.className = 'technique-card' + (isRec ? ' is-recommended' : '');
+    card.onclick = () => showDrill(tech.id);
+    card.innerHTML = `
+      ${isRec ? '<div class="recommended-badge">Recommended next</div>' : ''}
+      <div class="technique-card-top">
+        <span class="technique-name">${tech.name}</span>
+        ${badgeLabel ? `<span class="technique-badge ${badgeClass}">${badgeLabel}</span>` : ''}
+      </div>
+      <div class="technique-desc">${tech.desc}</div>
+      <div class="technique-progress-row">
+        <div class="t-progress-track">
+          <div class="t-progress-fill ${fillClass}" style="width:${fillPct}%"></div>
+        </div>
+        <span class="t-progress-label">${progressLabel}</span>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function toggleSelfReport(techId) {
+  const p = getTechniqueProgress(techId);
+  p.selfComplete = !p.selfComplete;
+  saveProgress();
+  const ch = CURRICULUM.find(c => c.techniques.some(t => t.id === techId));
+  renderTechniqueList(ch);
+}
+
+// ══════════════════════════════════════════════
+// PROBLEM GENERATORS
+// ══════════════════════════════════════════════
+let currentProblem = null; // { display, context, answer, tolerance, cue }
+
+function nextProblem() {
+  const tech = getTechById(currentTechniqueId);
+  currentProblem = generateProblem(tech);
+  renderProblem(currentProblem);
+  currentEntry = '';
+  answered = false;
+  renderEntry();
+  setFeedback('', '');
+  clearSpeedSignal();
+}
+
+function generateProblem(tech) {
+  switch(tech.type) {
+    case 'times-table':    return genTimesTable();
+    case 'bonds10':        return genBonds10();
+    case 'bonds100':       return genBonds100();
+    case 'ltr-add':        return genLtrAdd();
+    case 'compensation-add': return genCompensationAdd();
+    case 'bridging':       return genBridging();
+    case 'pct-build':      return genPctBuild();
+    case 'pct-complement': return genPctComplement();
+    case 'pct-reverse':    return genPctReverse();
+    case 'distributive':   return genDistributive();
+    case 'doubling-halving': return genDoublingHalving();
+    case 'div-reverse':    return genDivReverse();
+    case 'div-decomp':     return genDivDecomp();
+    case 'rule72':         return genRule72();
+    case 'estimation-leading': return genEstimationLeading(tech);
+    case 'estimation-anchor':  return genEstimationAnchor(tech);
+    case 'chain-pct-mul':  return genChainPctMul();
+    case 'chain-div-pct':  return genChainDivPct();
+    default: return { display: '?', context: '', answer: 0, tolerance: null };
+  }
+}
+
+function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function fmtMoney(n) { return '$' + n.toLocaleString(); }
+
+// ── Bonds to 10 ──
+function genBonds10() {
+  const a = rnd(1, 9);
+  return { display: `${a} + <span class="op">?</span> = 10`, context: '', answer: 10 - a, tolerance: null };
+}
+
+// ── Bonds to 100 ──
+function genBonds100() {
+  const a = rnd(11, 98);
+  if (a % 10 === 0) return genBonds100();
+  const context = `What completes ${a} to reach 100?`;
+  return { display: `${a} + ? = 100`, context, answer: 100 - a, tolerance: null };
+}
+
+// ── Left-to-right addition ──
+function genLtrAdd() {
+  const bases = [100, 200, 300, 400, 500, 600];
+  const base = pick(bases);
+  const a = base + rnd(10, 99);
+  const b = rnd(100, 499);
+  const contexts = [
+    `Two account balances combined.`,
+    `Year-end contributions added together.`,
+    `Portfolio segments totalled.`,
+  ];
+  return { display: `${a.toLocaleString()} + ${b.toLocaleString()}`, context: pick(contexts), answer: a + b, tolerance: null };
+}
+
+// ── Compensation addition ──
+function genCompensationAdd() {
+  // Ensure one number is within 1–5 of a round multiple of 10
+  const roundBase = pick([20,30,40,50,60,70,80,90,100,200,300,400,500,600,700,800,900,1000]);
+  const offset = rnd(1, 5);
+  const b = roundBase - offset; // e.g. 38 (close to 40)
+  const a = rnd(20, 900);
+  const contexts = ['Annual fee adjustment.', 'Contribution added to balance.', 'Account top-up calculation.'];
+  return { display: `${a.toLocaleString()} + ${b.toLocaleString()}`, context: pick(contexts) + ` (${b} is close to ${roundBase})`, answer: a + b, tolerance: null };
+}
+
+// ── Bridging ──
+function genBridging() {
+  // First number is just below a multiple of 10
+  const nextTen = pick([30,40,50,60,70,80,90,100,200,300]);
+  const a = nextTen - rnd(1, 5);
+  const b = rnd(10, 60);
+  return { display: `${a} + ${b}`, context: `Bridge through ${nextTen} first.`, answer: a + b, tolerance: null };
+}
+
+
+// ── AUM figure generator — clean below 70% acc, semi-round above ──
+function genAmt(techId, cleanList) {
+  const acc = getAccuracy(techId);
+  if (acc !== null && acc >= 0.70) {
+    // Semi-round: round base + messy offset
+    const bases = [200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 1000000, 1200000, 1500000];
+    const base = pick(bases);
+    const offsets = [23000, 37000, 47000, 53000, 63000, 72000, 84000, 91000, 17000, 44000, 58000, 67000, 76000, 83000];
+    return base + pick(offsets);
+  }
+  return pick(cleanList);
+}
+
+// ── Build from 10% ──
+function genPctBuild() {
+  const cleanAmts = [120000, 240000, 360000, 480000, 560000, 640000, 800000, 960000, 1200000, 1400000, 1600000, 2000000];
+  const pcts = [
+    { pct: 5,  label: '5%',  fn: v => v * 0.05 },
+    { pct: 15, label: '15%', fn: v => v * 0.15 },
+    { pct: 20, label: '20%', fn: v => v * 0.20 },
+    { pct: 25, label: '25%', fn: v => v * 0.25 },
+    { pct: 30, label: '30%', fn: v => v * 0.30 },
+  ];
+  const feeRates = [
+    { pct: 0.5,  label: '0.50%', fn: v => v * 0.005 },
+    { pct: 0.75, label: '0.75%', fn: v => v * 0.0075 },
+    { pct: 1.0,  label: '1.00%', fn: v => v * 0.01 },
+    { pct: 1.25, label: '1.25%', fn: v => v * 0.0125 },
+  ];
+  const amt = genAmt(currentTechniqueId, cleanAmts);
+  const usesFee = Math.random() < 0.4;
+  if (usesFee) {
+    const rate = pick(feeRates);
+    return {
+      display: `${rate.label} of ${fmtMoney(amt)}`,
+      context: `Annual advisory fee.`,
+      answer: Math.round(rate.fn(amt)),
+      tolerance: null
+    };
+  }
+  const p = pick(pcts);
+  const contexts = ['Allocation shift.', 'Portfolio rebalance.', 'New contribution split.'];
+  return { display: `${p.label} of ${fmtMoney(amt)}`, context: pick(contexts), answer: Math.round(p.fn(amt)), tolerance: null };
+}
+
+// ── Complement method ──
+function genPctComplement() {
+  const cleanAmts2 = [200000, 320000, 480000, 600000, 750000, 840000, 960000, 1200000];
+  const amt = genAmt(currentTechniqueId, cleanAmts2);
+  const highPcts = [
+    { pct: 80, label: '80%', comp: 20 },
+    { pct: 85, label: '85%', comp: 15 },
+    { pct: 90, label: '90%', comp: 10 },
+    { pct: 75, label: '75%', comp: 25 },
+  ];
+  const p = pick(highPcts);
+  return {
+    display: `${p.label} of ${fmtMoney(amt)}`,
+    context: `Find the ${p.comp}% complement first, then subtract.`,
+    answer: Math.round(amt * p.pct / 100),
+    tolerance: null
+  };
+}
+
+// ── Reverse percentage ──
+function genPctReverse() {
+  // Create clean fractions
+  const pairs = [
+    { gain: 42000, base: 420000, pct: 10 },
+    { gain: 15000, base: 250000, pct: 6 },
+    { gain: 54000, base: 540000, pct: 10 },
+    { gain: 24000, base: 400000, pct: 6 },
+    { gain: 36000, base: 360000, pct: 10 },
+    { gain: 18000, base: 600000, pct: 3 },
+    { gain: 30000, base: 500000, pct: 6 },
+    { gain: 48000, base: 800000, pct: 6 },
+    { gain: 20000, base: 400000, pct: 5 },
+    { gain: 60000, base: 1200000, pct: 5 },
+    { gain: 12000, base: 240000, pct: 5 },
+    { gain: 9000, base: 180000, pct: 5 },
+  ];
+  const pair = pick(pairs);
+  const contexts = [
+    `Portfolio grew by ${fmtMoney(pair.gain)} on ${fmtMoney(pair.base)}. What % return?`,
+    `Gain of ${fmtMoney(pair.gain)} on a ${fmtMoney(pair.base)} position. What % gain?`,
+    `${fmtMoney(pair.gain)} increase on ${fmtMoney(pair.base)} AUM. Return rate?`,
+  ];
+  return {
+    display: `${fmtMoney(pair.gain)} ÷ ${fmtMoney(pair.base)}`,
+    context: pick(contexts),
+    answer: pair.pct,
+    tolerance: null,
+    isPercent: true
+  };
+}
+
+// ── Distributive multiplication ──
+function genDistributive() {
+  const configs = [
+    { a: rnd(13,19), b: rnd(6,9) },
+    { a: rnd(21,39), b: rnd(4,8) },
+    { a: rnd(11,15)*100, b: rnd(6,12) },
+  ];
+  const cfg = pick(configs);
+  const contexts = ['Monthly fee × months.', 'Units × rate.', 'Contribution × multiplier.'];
+  return { display: `${cfg.a.toLocaleString()} × ${cfg.b}`, context: pick(contexts), answer: cfg.a * cfg.b, tolerance: null };
+}
+
+// ── Doubling & Halving ──
+function genDoublingHalving() {
+  const pairs = [
+    { a: 35, b: 16 }, { a: 25, b: 48 }, { a: 15, b: 24 },
+    { a: 125, b: 16 }, { a: 375, b: 24 }, { a: 75, b: 12 },
+    { a: 45, b: 16 }, { a: 175, b: 8 }, { a: 625, b: 8 },
+  ];
+  const p = pick(pairs);
+  return {
+    display: `${p.a.toLocaleString()} × ${p.b}`,
+    context: `Halve one, double the other until trivial.`,
+    answer: p.a * p.b,
+    tolerance: null
+  };
+}
+
+// ── Division as reverse multiplication ──
+function genDivReverse() {
+  const tables = [
+    [6,7],[6,8],[7,8],[7,9],[8,9],[6,12],[7,12],[8,12],
+    [4,9],[5,8],[5,9],[6,9],[4,7],[3,8],[3,9],[4,8],
+  ];
+  const [a, b] = pick(tables);
+  const dividend = a * b;
+  return {
+    display: `${dividend} ÷ ${b}`,
+    context: `Reframe: ${b} × ? = ${dividend}`,
+    answer: a,
+    tolerance: null
+  };
+}
+
+// ── Division by decomposition ──
+function genDivDecomp() {
+  const configs = [
+    { divisor: 8,  quotient: rnd(30,60) },
+    { divisor: 7,  quotient: rnd(30,60) },
+    { divisor: 12, quotient: rnd(10,30) },
+    { divisor: 9,  quotient: rnd(20,50) },
+    { divisor: 6,  quotient: rnd(30,60) },
+  ];
+  const cfg = pick(configs);
+  const dividend = cfg.divisor * cfg.quotient;
+  const contexts = [
+    `Annual total split into ${cfg.divisor} equal parts.`,
+    `${fmtMoney(dividend)} distributed equally ${cfg.divisor} ways.`,
+    `Divide ${dividend.toLocaleString()} by ${cfg.divisor}.`,
+  ];
+  return { display: `${dividend.toLocaleString()} ÷ ${cfg.divisor}`, context: pick(contexts), answer: cfg.quotient, tolerance: null };
+}
+
+
+// ── Times table drill (weighted toward hard-core facts) ──
+function genTimesTable() {
+  // Hard-core facts get 3x weight, others get 1x
+  const hardCore = [
+    [6,7],[7,6],[6,8],[8,6],[7,8],[8,7],
+    [7,9],[9,7],[8,9],[9,8],[6,12],[12,6],
+    [7,12],[12,7],[8,12],[12,8]
+  ];
+  const all = [];
+  for (let a = 2; a <= 12; a++) {
+    for (let b = 2; b <= 12; b++) {
+      const isHard = hardCore.some(([x,y]) => x===a && y===b);
+      const weight = isHard ? 3 : 1;
+      for (let w = 0; w < weight; w++) all.push([a, b]);
+    }
+  }
+  const [a, b] = pick(all);
+  return {
+    display: `${a} <span class="op">×</span> ${b}`,
+    context: '',
+    answer: a * b,
+    tolerance: null
+  };
+}
+
+// ── Rule of 72 ──
+function genRule72() {
+  const mode = Math.random() < 0.5 ? 'rate' : 'years';
+  if (mode === 'rate') {
+    const rates = [4, 5, 6, 7, 8, 9, 10, 12];
+    const rate = pick(rates);
+    const exact = (72 / rate);
+    return {
+      display: `72 ÷ ${rate}%`,
+      context: `How many years to double at ${rate}% return?`,
+      answer: parseFloat(exact.toFixed(1)),
+      tolerance: 0.15, // 15% tolerance for Rule of 72 approximation
+    };
+  } else {
+    const years = [6, 8, 9, 10, 12, 18];
+    const yr = pick(years);
+    const exact = 72 / yr;
+    return {
+      display: `72 ÷ ${yr} years`,
+      context: `What annual rate is needed to double in ${yr} years?`,
+      answer: parseFloat(exact.toFixed(1)),
+      tolerance: 0.15,
+      isPercent: true
+    };
+  }
+}
+
+// ── Leading digit estimation ──
+function genEstimationLeading(tech) {
+  const a = rnd(10, 99) * 1000 + rnd(0,999);
+  const b = rnd(10, 99) * 1000 + rnd(0,999);
+  const c = rnd(10, 99) * 1000 + rnd(0,999);
+  const exact = a + b + c;
+  return {
+    layout: 'scenario',
+    numbers: [
+      { label: 'Account A', value: fmtMoney(a), op: '+' },
+      { label: 'Account B', value: fmtMoney(b), op: '+' },
+      { label: 'Account C', value: fmtMoney(c), op: '=' },
+    ],
+    prompt: 'Estimate the total portfolio value',
+    display: `${fmtMoney(a)} + ${fmtMoney(b)} + ${fmtMoney(c)}`,
+    context: `Estimate to nearest $10,000. Within 10% accepted.`,
+    answer: exact,
+    tolerance: tech.estimationTolerance,
+  };
+}
+
+// ── Anchor and adjust estimation ──
+function genEstimationAnchor(tech) {
+  const anchors = [
+    { principal: 85000, rate: 7, years: 10, exact: Math.round(85000 * Math.pow(1.07,10)) },
+    { principal: 120000, rate: 6, years: 12, exact: Math.round(120000 * Math.pow(1.06,12)) },
+    { principal: 60000, rate: 8, years: 9, exact: Math.round(60000 * Math.pow(1.08,9)) },
+    { principal: 200000, rate: 7, years: 10, exact: Math.round(200000 * Math.pow(1.07,10)) },
+    { principal: 150000, rate: 9, years: 8, exact: Math.round(150000 * Math.pow(1.09,8)) },
+  ];
+  const cfg = pick(anchors);
+  return {
+    layout: 'scenario',
+    numbers: [
+      { label: 'Principal', value: fmtMoney(cfg.principal), op: null },
+      { label: 'Annual Return', value: cfg.rate + '%', op: null },
+      { label: 'Time Horizon', value: cfg.years + ' years', op: null },
+    ],
+    prompt: 'Estimate the future value',
+    display: `${fmtMoney(cfg.principal)} @ ${cfg.rate}% for ${cfg.years}yr`,
+    context: `Use Rule of 72 as anchor. Within 15% accepted.`,
+    answer: cfg.exact,
+    tolerance: tech.estimationTolerance,
+  };
+}
+
+// ── Chain: % then × ──
+function genChainPctMul() {
+  const scenarios = [
+    { total: 640000, pct: 20, rate: 4.5 },
+    { total: 800000, pct: 15, rate: 3.5 },
+    { total: 1200000, pct: 25, rate: 5.0 },
+    { total: 500000, pct: 30, rate: 4.0 },
+    { total: 960000, pct: 20, rate: 3.0 },
+  ];
+  const s = pick(scenarios);
+  const shifted = Math.round(s.total * s.pct / 100);
+  const income = Math.round(shifted * s.rate / 100);
+  return {
+    layout: 'chain',
+    scenario: `A client wants to move ${s.pct}% of their ${fmtMoney(s.total)} portfolio into fixed income earning ${s.rate}% annually.`,
+    steps: [
+      { text: `Find ${s.pct}% of ${fmtMoney(s.total)} — the amount being moved`, active: true },
+      { text: `Find ${s.rate}% of that amount — annual income generated`, active: false },
+    ],
+    anchorLabel: fmtMoney(shifted),
+    question: `What is the annual income from the new fixed income position?`,
+    display: `${s.pct}% of ${fmtMoney(s.total)}, then × ${s.rate}%`,
+    context: `Move ${s.pct}% to fixed income at ${s.rate}%. Annual income from that portion?`,
+    answer: income,
+    tolerance: null
+  };
+}
+
+// ── Chain: ÷ then % ──
+function genChainDivPct() {
+  const scenarios = [
+    { total: 840000, parts: 3, rate: 0.75 },
+    { total: 600000, parts: 4, rate: 1.00 },
+    { total: 1200000, parts: 3, rate: 0.50 },
+    { total: 480000, parts: 4, rate: 0.75 },
+    { total: 900000, parts: 3, rate: 1.25 },
+  ];
+  const s = pick(scenarios);
+  const perAccount = Math.round(s.total / s.parts);
+  const fee = Math.round(perAccount * s.rate / 100);
+  return {
+    layout: 'chain',
+    scenario: `A client has ${fmtMoney(s.total)} split equally across ${s.parts} accounts. The advisory fee is ${s.rate}%.`,
+    steps: [
+      { text: `Divide ${fmtMoney(s.total)} by ${s.parts} — value per account`, active: true },
+      { text: `Find ${s.rate}% of that amount — annual fee per account`, active: false },
+    ],
+    anchorLabel: fmtMoney(perAccount),
+    question: `What is the annual advisory fee per account?`,
+    display: `${fmtMoney(s.total)} ÷ ${s.parts}, then × ${s.rate}%`,
+    context: `Split ${fmtMoney(s.total)} equally ${s.parts} ways. ${s.rate}% fee per account. Fee per account?`,
+    answer: fee,
+    tolerance: null
+  };
+}
+
+// ══════════════════════════════════════════════
+// DRILL ENGINE
+// ══════════════════════════════════════════════
+let currentEntry = '';
+let answered = false;
+let sessionAnswered = 0;
+let sessionCorrect = 0;
+let questionStartTime = 0;
+
+function renderProblem(prob) {
+  const card = document.querySelector('.problem-card');
+  const display = document.getElementById('problem-display');
+  const context = document.getElementById('problem-context');
+
+  // Reset card classes
+  card.className = 'problem-card';
+
+  if (prob.layout === 'scenario') {
+    card.classList.add('scenario');
+    // Build scenario layout
+    let html = `<div class="scenario-label">Estimate</div>`;
+    html += `<div class="scenario-numbers">`;
+    prob.numbers.forEach((row, i) => {
+      html += `<div class="scenario-num-row">
+        <span class="sn-label">${row.label}</span>
+        ${row.op ? `<span class="sn-op">${row.op}</span>` : ''}
+        <span class="sn-value">${row.value}</span>
+      </div>`;
+    });
+    html += `</div>`;
+    html += `<div class="scenario-prompt">${prob.prompt}</div>`;
+    html += `<div class="scenario-tolerance">${prob.context}</div>`;
+    display.innerHTML = html;
+    display.style.fontSize = '';
+    context.textContent = '';
+
+  } else if (prob.layout === 'chain') {
+    card.classList.add('chain');
+    // Build chain layout with anchor connector embedded between steps
+    let html = `<div class="chain-scenario">${prob.scenario}</div>`;
+    html += `<div class="chain-steps">`;
+    prob.steps.forEach((step, i) => {
+      html += `<div class="chain-step ${step.active ? 'active-step' : ''}">
+        <span class="cs-num">${i+1}</span>
+        <span class="cs-text">${step.text}</span>
+      </div>`;
+      // Insert anchor connector between step 1 and step 2 — hidden until answer submitted
+      if (i === 0 && prob.anchorLabel) {
+        html += `<div class="chain-anchor" id="chain-anchor-reveal" style="display:none">
+          <span class="ca-arrow">↓</span>
+          <span class="ca-value">${prob.anchorLabel}</span>
+          <span class="ca-label">Step 1 result — anchor</span>
+        </div>`;
+      }
+    });
+    html += `</div>`;
+    html += `<div class="chain-question">${prob.question}</div>`;
+    display.innerHTML = html;
+    display.style.fontSize = '';
+    context.textContent = '';
+
+  } else {
+    // Standard arithmetic display
+    display.style.fontSize = '';
+    display.innerHTML = prob.display;
+    context.textContent = prob.context || '';
+  }
+
+  questionStartTime = Date.now();
+}
+
+function renderEntry() {
+  const el = document.getElementById('answer-display');
+  if (currentEntry === '') {
+    el.textContent = 'enter answer';
+    el.className = 'answer-display empty active';
+  } else {
+    el.textContent = currentEntry;
+    el.className = 'answer-display active';
+  }
+}
+
+function np(digit) {
+  if (answered) return;
+  if (currentEntry.length >= 8) return;
+  if (digit === '.' && currentEntry.includes('.')) return;
+  currentEntry += digit;
+  renderEntry();
+}
+function npDel() {
+  if (answered) return;
+  currentEntry = currentEntry.slice(0, -1);
+  renderEntry();
+}
+function toggleDecimal() {
+  if (answered) return;
+  if (!currentEntry.includes('.')) { currentEntry += '.'; renderEntry(); }
+}
+
+// Technique-aware speed thresholds (ms)
+const SPEED_THRESHOLDS = {
+  'bonds10': 3000, 'bonds100': 4000,
+  'ltr-add': 6000, 'compensation-add': 6000, 'bridging': 6000,
+  'pct-build': 9000, 'pct-complement': 9000, 'pct-reverse': 9000,
+  'times-table': 3000, 'distributive': 7000, 'doubling-halving': 8000,
+  'div-reverse': 3000, 'div-decomp': 7000, 'rule72': 5000,
+  'estimation-leading': 12000, 'estimation-anchor': 15000,
+  'chain-pct-mul': 18000, 'chain-div-pct': 18000,
+};
+
+function submitAnswer() {
+  if (answered) { nextProblem(); return; }
+  if (currentEntry === '' || currentEntry === '.') return;
+
+  const userVal = parseFloat(currentEntry);
+  const exact = currentProblem.answer;
+  const tolerance = currentProblem.tolerance;
+
+  let isCorrect = false;
+  let isClose = false;
+
+  if (tolerance !== null) {
+    const pct = Math.abs(userVal - exact) / Math.abs(exact);
+    isCorrect = pct <= tolerance;
+    isClose = pct <= tolerance * 1.5 && !isCorrect;
+  } else {
+    isCorrect = Math.abs(userVal - exact) < 0.05;
+    isClose = Math.abs(userVal - exact) <= 1 && !isCorrect;
+  }
+
+  answered = true;
+  sessionAnswered++;
+  // Reveal chain anchor if present
+  const anchorEl = document.getElementById('chain-anchor-reveal');
+  if (anchorEl) anchorEl.style.display = 'flex';
+
+  const display = document.getElementById('answer-display');
+  const suffix = currentProblem.isPercent ? '%' : '';
+
+  // Speed check
+  const elapsed = Date.now() - questionStartTime;
+  const threshold = SPEED_THRESHOLDS[currentTechniqueId] || 8000;
+  const isSlow = elapsed > threshold;
+
+  if (isCorrect) {
+    sessionCorrect++;
+    display.className = 'answer-display correct';
+    setFeedback(`✓ Correct — ${exact.toLocaleString()}${suffix}`, 'correct');
+    if (isSlow) showSpeedSignal();
+    recordAttempt(currentTechniqueId, true);
+  } else if (isClose) {
+    display.className = 'answer-display close';
+    setFeedback(`Close — exact answer: ${exact.toLocaleString()}${suffix}`, 'close');
+    recordAttempt(currentTechniqueId, false);
+  } else {
+    display.className = 'answer-display wrong';
+    // Chain problems: show two-step breakdown
+    if (currentProblem.layout === 'chain' && currentProblem.anchorLabel) {
+      setFeedback(`Step 1: ${currentProblem.anchorLabel}  →  Step 2: ${exact.toLocaleString()}${suffix}`, 'wrong');
+    } else {
+      setFeedback(`Answer: ${exact.toLocaleString()}${suffix}`, 'wrong');
+    }
+    recordAttempt(currentTechniqueId, false);
+  }
+
+  updateSessionStats();
+  updateMasteryStrip(currentTechniqueId);
+  checkMasteryAchieved();
+  setTimeout(nextProblem, isCorrect ? 900 : 1800);
+}
+
+function skipProblem() {
+  // Skip entirely — no attempt recorded, no counter incremented
+  nextProblem();
+}
+
+function setFeedback(msg, cls) {
+  const el = document.getElementById('feedback-row');
+  el.textContent = msg;
+  el.className = 'feedback-row ' + (msg ? cls : 'hidden');
+}
+
+function showSpeedSignal() {
+  const el = document.getElementById('speed-signal');
+  if (!el) return;
+  el.textContent = '⚡ Correct — push for speed';
+  el.classList.add('visible');
+}
+
+function clearSpeedSignal() {
+  const el = document.getElementById('speed-signal');
+  if (!el) return;
+  el.textContent = '';
+  el.classList.remove('visible');
+}
+
+function updateSessionStats() {
+  document.getElementById('ss-answered').textContent = sessionAnswered;
+  document.getElementById('ss-correct').textContent = sessionCorrect;
+  const acc = sessionAnswered > 0 ? Math.round((sessionCorrect / sessionAnswered) * 100) + '%' : '—';
+  document.getElementById('ss-acc').textContent = acc;
+}
+
+function updateMasteryStrip(techId) {
+  const acc = getAccuracy(techId);
+  const p = getTechniqueProgress(techId);
+  const pct = acc !== null ? Math.round(acc * 100) : 0;
+  const fill = document.getElementById('ms-fill');
+  const label = document.getElementById('ms-pct');
+  fill.style.width = pct + '%';
+  const isGreat = pct >= 85 && p.history.length >= 10;
+  fill.className = 'ms-fill' + (isGreat ? ' great' : '');
+  label.className = 'ms-pct' + (isGreat ? ' great' : '');
+  const windowSize = p.history.length;
+  label.textContent = acc !== null ? `${pct}% (${windowSize}/20)` : '—';
+}
+
+let masteryJustAchieved = false;
+function checkMasteryAchieved() {
+  if (masteryJustAchieved) return;
+  if (isMastered(currentTechniqueId)) {
+    masteryJustAchieved = true;
+    showMasteryToast();
+  }
+}
+
+function showMasteryToast() {
+  const toast = document.getElementById('mastery-toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════
+// CONCEPT CARD
+// ══════════════════════════════════════════════
+function toggleConcept() {
+  document.getElementById('concept-card').classList.toggle('expanded');
+}
+
+// ══════════════════════════════════════════════
+// KEYBOARD SUPPORT (DESKTOP)
+// ══════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const drill = document.getElementById('view-drill');
+  if (!drill.classList.contains('active')) return;
+  if (answered) return;
+  if (e.key >= '0' && e.key <= '9') np(e.key);
+  else if (e.key === '.') { if (!currentEntry.includes('.')) np('.'); }
+  else if (e.key === 'Backspace') npDel();
+  else if (e.key === 'Enter') submitAnswer();
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+showMap();
+</script>
+</body>
+</html>
